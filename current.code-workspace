@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "/Users/kate/Documents/_js/project"
+		},
+		{
+			"path": "/Users/kate/Documents/_vue/vue-pack/project"
+		},
+		{
+			"path": "/Users/kate/Documents/_js/webpack"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "/Users/kate/Documents/_js/mern"
+		},
+		{
+			"path": "/Users/kate/Documents/_project/SVN/LynxOptiquePodcast"
+		}
+	],
+	"settings": {
+		"explorer.compactFolders": false
+	}
+}
