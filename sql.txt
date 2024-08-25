@@ -1,0 +1,567 @@
+https://www.youtube.com/watch?v=q0nuhf7vzkE&list=PLtPJ9lKvJ4oh5SdmGVusIVDPcELrJ2bsT&index=7
+можно еще что-то посмотреть про проектирование БД
+
+*** SQL ***
+
+SELECT - извлечение данных из таблиц реляционной базы
+FROM - источник данных
+DISTINCT - выбор уникальных значений в столбцах
+LIMIT - ограничение кол ичества извлекаемых строк
+AS - создание псевдонима
+
+SELECT name, appearances FROM superheroes
+
+
+--- Filtering ---
+
+WHERE - фильтрация строк, с которыми будут выполняться действия, используется не только в SELECT, но и в других операторах SQL
+
+SELECT *
+FROM superheroes
+WHERE gender = 'Female Characters'
+
+Операторы сравнения:
+=
+<>, !=
+>
+>=
+<
+<=
+between - значение находится в указанном диапазоне
+in - значение входит в список
+like - проверка строки на соответствие шаблону (% - любое количество символов; _ - ровно один символ)
+
+Примеры:
+
+SELECT *
+FROM superheroes
+WHERE year BETWEEN 2000 AND 2005
+
+SELECT *
+FROM superheroes
+WHERE hair IN ('Red Hair', 'Blond Hair')
+
+SELECT *
+FROM superheroes
+WHERE hair LIKE '%Blond%'
+
+Логические операции в WHERE:
+AND
+OR
+NOT
+
+SELECT *
+FROM superheroes
+WHERE gender = 'Female Characters'
+      AND
+      align = 'Bad Characters'
+
+SELECT *
+FROM superheroes
+WHERE hair NOT IN ('Red Hair', 'Blond Hair')
+
+--- Sorting ---
+
+SELECT *
+FROM superheroes
+ORDER BY year
+
+Порядок сортировки:
+ASC (ascending) - по возрастанию
+DESC (descendig)- по убыванию
+
+SELECT *
+FROM superheroes
+ORDER BY appearances DESC
+
+SELECT *
+FROM superheroes
+WHERE align = 'Bad Characters'
+  AND gender = 'Female Characters'
+ORDER BY appearances DESC
+LIMIT 5
+
+SELECT *
+FROM superheroes
+ORDER BY year, appearances
+
+--- Creating Tables ---
+
+CREATE TABLE superheroes (
+  id INT PRIMARY KEY,            // id SERIAL PRIMARY KEY  - используется в PostgresSQL для автоматизации, в MySQL используется AUTO_INCREMENT вместо SERIAL
+  name VARCHAR(100),
+  align VARCHAR(30),
+  eye VARCHAR(30),
+  hair VARCHAR(30),
+  gender VARCHAR(30),
+  appearances INT,
+  year INT,
+  universe VARCHAR(10)
+)
+
+Типы данных:
+CHARACTER(n) (CHAR(n)) - строка фиксированной длинны n
+CHARACTER VARYNG(n) (VARCHAR(n)) - строка переменной длинны, макс длина n
+BOOLEAN
+INTEGER (INT)
+NUMERIC (p, s) - действительное число (p - количество значащих цифр, s - количество цифр после запятой). Хранится точно.
+REAL - действительное число одинарной точности, формат IEEE 754 (быстрее, чем numeric)
+DOUBLE PRECISION - действительное число двойной точности, формат IEEE 754 (быстрее, чем numeric)
+DATE - дата
+TIMESTAMP - дата и время
+
+Просмотр сведений о таблице в терминале
+// PostgresSQL
+postgres=# \d superheroes
+
+// Oracle, MySQL
+describe superheroes
+
+DROP TABLE superheroes - удаление таблицы
+
+DROP TABLE IF EXISTS superheroes;
+CREATE TABLE superheroes (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100),
+  align VARCHAR(30),
+  eye VARCHAR(30),
+  hair VARCHAR(30),
+  gender VARCHAR(30),
+  appearances INT,
+  year INT,
+  universe VARCHAR(10)
+)
+
+
+ALTER TABLE - изменение таблиц
+
+ALTER TABLE superheroes ADD COLUMN alive BOOLEAN;
+
+ALTER TABLE superheroes ADD COLUMN first_appearance TIMESTAMP;
+
+ALTER TABLE superheroes DROP COLUMN year;
+
+ALTER TABLE superheroes RENAME COLUMN name TO hero_name;
+
+ALTER TABLE superheroes RENAME TO comic_characters;
+
+
+Языки в SQL:
+Data Definition Language (DDL) - язык описания данных
+Data Manipulation Language (DDL) - язык манипулирования данными
+Data Control Language (DCL) - язык управления доступом к данным
+
+Работа с таблицами отличается в разных реализациях (читай доки)
+
+
+--- Insert/update/delete data into the table ---
+
+INSERT INTO superheroes(name, appearances, universe)
+VALUES ('Spider-Man', 4043, 'marvel')
+
+// считается, что задаем все поля. не рекомендовано
+INSERT INTO superheroes
+VALUES (1, 'Spider-Man (Peter Parker)', 'Good Characters', 'Hazel Eyes', 4043, 'marvel')
+
+UPDATE superheroes
+SET name='Batmap',
+    universe='dc'
+WHERE id=1
+
+// пакетная замена
+UPDATE superheroes
+SET gender='Man'
+WHERE gender='Male Characters'
+
+DELETE FROM superheroes
+WHERE id=2
+
+DELETE FROM superheroes
+WHERE gender='Male Characters'
+
+// удаление всего в таблице
+DELETE FROM superheroes
+
+
+--- Агрегатные функции в SQL (те, что используются совместно с сортировкой) ---
+Обрабатывают несколько строк и вычисляют одно значение
+
+SELECT align, COUNT(*) FROM superheroes
+GROUP BY align
+
+Агрегатные функции:
+AVG - среднее значение
+COUNT - количество значений
+MAX - минимум
+MIN - максимум
+SUM - сумма
+Серверы БД поддерживают дополнительные функции
+
+SELECT align, COUNT(*), SUM(appearances)
+FROM superheroes
+GROUP BY align
+
+SELECT align, AVG(appearances), SUM(appearances)/COUNT(*) AS average
+FROM superheroes
+GROUP BY align
+
+SELECT year, MIN(appearances), MAX(appearances)
+FROM superheroes
+GROUP BY year
+ORDER BY year        // ORDER BY MAX(appearances) DESC
+
+// создание алиасов для последующего ускорения записи запроса
+SELECT year, MIN(appearances), MAX(appearances) AS max_ap
+FROM superheroes
+GROUP BY year
+ORDER BY max_ap DESC
+LIMIT 5
+
+--- Фильтрация результатов группаровки (HAVING) ---
+
+SELECT hair, COUNT(*) FROM superheroes
+WHERE gender='Female Characters'
+GROUP BY hair
+HAVING COUNT(*) > 10
+
+SELECT hair, COUNT(*) FROM superheroes
+WHERE gender='Female Characters'
+GROUP BY hair
+HAVING COUNT(*) BETWEEN 50 AND 300
+
+
+--- Декомпозиция данных в базе ---
+При работе с несколькими таблицами, связь через id (foreign key - внешний ключ)
+
+
+--- Запрос данных из нескольких таблиц ---
+Внутреннее объединение (далее будут внешнее, левое, правое, перекрестное и полное)
+
+SELECT products.name, product_types.type_name  // эти данные берем
+FROM products JOIN product_types              // извлекаем данные из таблицы products, которую объеденияем с product_types
+ON products.type_id = product_types.id         // условие объединения
+
+// результат - одна большая таблица
+
+Использование псевдонимов таблиц:
+SELECT p.name, t.type_name
+FROM products AS p JOIN product_types AS t
+ON p.type_id = t.id
+
+Дополнительное использование псевдонимов столбцов:
+SELECT p.name AS product_name,
+       t.type_name AS product_type,
+       p.price AS product_price,
+FROM products AS p JOIN product_types AS t
+ON p.type_id = t.id
+WHERE t.type_name='Онлайн-курс'
+ORDER BY p.price DESC
+
+
+--- Типы объединений в SQL ---
+- INNER JOIN (JOIN) (by default) внутреннее объединение - сюда входят те строки, для которых нашлись соответствующие строки из другой таблицы
+
+- внешнее объединение - если есть такие строки, для которых отсутствуют соответствующие строки в другой таблице
+
+// Левое внешнее объединение - в результат пойдут строки из левой таблицы, даже, если в правой нет аналога
+SELECT products.name, product_types.type_name
+FROM products LEFT OUTER JOIN product_types
+ON products.type_id = product_types.id
+
+// Правое внешнее объединение - в результат пойдут строки из правой таблицы, даже, если в левой нет аналога
+SELECT products.name, product_types.type_name
+FROM products RIGHT OUTER JOIN product_types
+ON products.type_id = product_types.id
+
+// Полное внешнее объединение - в результат пойдут все строки из обеих таблиц, даже, если в другой нет аналога
+SELECT products.name, product_types.type_name
+FROM products FULL OUTER JOIN product_types
+ON products.type_id = product_types.id
+
+- перекрестное объединение - объединяет без условий, каждое с каждым - обычно не используется
+SELECT products.name, product_types.type_name
+FROM products CROSS JOIN product_types
+
+
+--- Схема БД (draw SQL - рисовалка) ---
+1. Таблицы
+2. Столбцы в таблицах и типы данных в них
+3. Связи между таблицами
+  a. one-to-one
+  b. one-to-many
+  c. many-to-one
+  d. many-to-many (реализуется через отдельную таблицу)
+
+SELECT p.id,
+       p.name,
+       p.price,
+       p.quantity,
+       p.price * s.quantity AS total
+FROM products AS p JOIN sales AS sales
+  ON p.id = s.product_id
+WHERE s.order_id=2
+
+Множественное объединение таблиц:
+SELECT p.id,
+       p.name,
+       p.price,
+       p.quantity,
+       p.price * s.quantity AS total
+FROM products AS p JOIN sales AS sales
+  ON p.id = s.product_id
+  JOIN orders AS o
+  ON o.id = s.order_id
+WHERE o.customer_id=1
+
+
+--- Подзапросы в SQL ---
+Оформляется в круглых скобках, запускается перед основным запросом.
+
+SELECT id, name, price
+FROM products
+WHERE price = (SELECT MAX(price) FROM products)
+
+SELECT id, name, price
+FROM products
+WHERE id IN (SELECT product_id FROM sales)
+
+// можно использовать подзапросы в UPDATE, INSERT, DELETE
+UPDATE products
+SET price = price + 500
+WHERE type_id = (SELECT id
+                FROM product_type
+                WHERE type_name='Book')
+
+
+--- Транзакции в БД ---
+
+Причины невыполнения команд:
+1. Отказ СУБД:
+  - аппаратная проблема с сервером СУБД
+  - программная ошибка в СУБД или операционной системе
+  - не хватает места на диске для записи данных
+2. Отказ приложения пользователя
+  - аппаратная проблема на клиенте
+  - программная ошибка в приложении или операционной системе
+  - пользователь прервал работу приложения
+3. Потеря сетевого соединения клиента и сервера
+  - аппаратная проблема с сетевым оборудованием на клиенте/сервере
+  - проблемы с работой сети
+
+Для защиты используют Транзакции
+
+Транзакция - последовательность команд SQL, которые должны быть выполненыполностью или не выполнены вообще.
+
+START TRANSACTION;
+
+UPDATE account SET balance = balance - 15000
+WHERE account_nummer = 1234567;
+
+UPDATE account SET balance = balance + 15000
+WHERE account_nummer = 9876543;
+
+COMMIT; // заливка транзакции
+
+// ROLLBACK; // откат транзакции
+
+
+1. Автоматическая фиксации транзакций
+  - специальный режим работы СУБД
+  - после выполнения каждой команды SQL автоматически фиксируется транзакция
+  - нет возможности отменить изменения
+
+2. Использование режима автоматической фиксации транзакций
+  - PostgreSQL - включено по умолчанию
+  - Oracle - выключено по умолчанию
+
+Для серьезных работ следует отключать автоматический режим, чтобы иметь возможность отката без обращения к админу СУБД
+
+
+Завершение транзакций:
+1. COMMIT/ROLLBACK (явное подтверждение или отмена транзакции)
+2. Запуск команд создания, изменения или удаления таблиц (создание, изменение или удаление таблицы не может быть отменено; перед запуском команды предыдущая транзакция фиксируется)
+3. Сбой сервера СУБД (откат всех незавершенных транзакций после восстановления сервера)
+4. Сбой клиента СУБД (откат незавершенной транзакции после тайм-аута)
+
+
+--- Индексы в БД ---
+
+Индексы:
+  - структура данных, позволяющая быстро определить положение интересующих данных в базе
+  - создается для столбца (совокупности столбцов) в таблице
+  - обеспечивает возможность повысить производительность запросов
+
+Эффекты от индексов:
+  - повышение производительности запросов на чтение
+  - снижение производительности записи в таблицу
+
+Использование индексов:
+  - быстрый поиск интересующих данных в таблице
+  - извлечение всех интересующих данных из таблицы по найденному положению
+  - реализуется автоматически СУБД, если это эффективно
+
+CRETE INDEX superheroes_name_idx
+ON superheroes(name)
+
+Запрос не меняется:
+SELECT name, appearances, eye, hair
+FROM superheroes
+WHERE name = 'Iron Man'
+
+Использование индексов:
+1. Фильтрация данных из таблицы
+  - для столбца, указанного в WHERE, существует индексов
+2. Объединение данных
+  - для столбцов, указанных в условии объединения, существует индекс
+3. Сортировка данных
+  - для столбцов, указанных в ORDER BY, существует индекс в правильной последовательности сортировки
+
+CRETE INDEX superheroes_appearances_idx
+ON superheroes(appearances DESC)
+
+// индекс по нескольким столбцам
+CREATE INDEX person_name_idx
+ON person(last_name, first_name)
+
+SELECT *
+FROM person
+WHERE last_name = 'Honcharenko' // при поиске только по первому параметру индекс тоже используется
+      AND first_name = 'Kate'   // только по второму - нет, т.к. данные в индексе сортируются сначала по первому параметру
+
+Удаление индекса:
+DROP INDEX person_name_idx
+
+Недостатки индексов:
+1. Изменение в БД (изменение в исходной таблице приводит к необходимости менять все, связанные с ней, индексы)
+2. Снижение производительности (если индексов много, то при изменении данных в таблице требуется длительное время для обновления индексов)
+
+
+--- Ограничения в БД ---
+1. PRIMARY KEY - внутренний ключ
+2. FOREIGN KEY - внешний ключ
+3. NOT NULL - не пустое
+4. UNIQUE - уникальные значения
+5. CHECK - проверка условий
+
+CREATE TABLE superheroes(
+  id INT PRIMARY KEY,               // уникально и обязательно (= UNIQUE + NOT NULL)
+  name VARCHAR(100) UNIQUE NOT NULL,       // не пустое значение
+  last_name VARCHAR(100) UNIQUE,    // уникальное значение
+  align VARCHAR(30),
+  eye VARCHAR(30),
+  hair VARCHAR(30),
+  gender VARCHAR(30),
+  appearances INT,
+  year INT,
+  universe VARCHAR(10)
+)
+
+// первичный ключ из нескольких полей
+CREATE TABLE sales(
+  product_id INT,
+  order_id INT,
+  quantity INT,
+  PRIMARY KEY(product_id, order_id)
+)
+
+// ограничение по проверке значений
+CREATE TABLE products(
+  id PRIMARY KEY,
+  name VARCHAR(100),
+  type_id INT,
+  price INT CHECK (price >= 0)      // check + условие => цена положительная
+)
+
+// именованное ограничение 
+CREATE TABLE products(
+  id PRIMARY KEY,
+  name VARCHAR(100),
+  type_id INT,
+  price INT CONSTRAINT positive_price    // иначе СУБД бзовет его по-своему и будет неудобно искать его в списке ограничений
+    CHECK (price >= 0)
+)
+
+// ограничение на уровне таблиц
+CREATE TABLE products(
+  id PRIMARY KEY,
+  name VARCHAR(100),
+  type_id INT,
+  price INT,
+  CONSTRAINT positive_price CHECK (price >= 0)
+)
+
+// ограничение ссылочной целостности (пример - 2 таблицы, в первой есть ссылки на id второй, чтобы из второй нельзы было удалить этот id, при наличии ссылки на него в первой таблице)
+CREATE TABLE products(
+  id PRIMARY KEY,
+  name VARCHAR(100),
+  type_id INT REFERENCES product_types(id)
+      ON DELETE RESTRICT, // запретит удалять
+      // ON DELETE CASCADE, // удалит записи каскадно, первая таблица будет изменена
+  price INT
+)
+
+Внешний ключ на уровне таблицы
+CREATE TABLE products(
+  id PRIMARY KEY,
+  name VARCHAR(100),
+  type_id INT,
+  price INT,
+  FOREIGN KEY(type_id) REFERENCES product_types(id)
+)
+
+Одни и те же столбцы могут входить как в первичный, так и во вторичный
+CREATE TBALE sales(
+  product_id INT REFERENCES products(id),
+  order_id INT REFERENCES order(id),
+  quantity INT,
+  PRIMARY KEY(product_id, order_id)
+)
+
+
+--- Представления в SQL (VIEW) ---
+Псевдонимы для запросов в селект
+Данных не содержат, только ссылки на данные
+
+CREATE VIEW customers_v id, name
+  AS SELECT id, name FROM customers
+
+SELECT * FROM customers_v
+
+
+// перекрестное представление из 2 таблиц
+CREATE VIEW products_v
+  AS SELECT p.id AS id,
+  p.name AS product_name,
+  t.type_name AS product_type,
+  p.price AS product_price
+FROM products AS p JOIN product_types AS t
+ON p.type_id=t.id
+
+Использование представлений:
+1. Ограничение доступа к данным
+  - представление содержит не все столбцы/строки исходной таблицы
+2. Псевдонимы для сложных запросов
+  - запрос извлекает данные из нескольких таблиц
+  - запрос выполныет группировки и расчет агрегаций
+3. Сокрытие реализации
+  - пользователи работают только с представлениями
+  - таблицы в БД можно менять
+
+Материализованные представления - поддерживают не все СУБД, по сути содержат данные, есть смысл создавать для запросов, которые часто используются и долго работают (Оракл и ПостгреСКЛ поддерживают). 
+Выбирку из таблиц делает и хранит данные. Недостаток - дынные в таблицах обновляются, а в этом представлении - нет.
+
+CREATE MATERIALIZED VIEW products_v
+  AS SELECT p.id AS id,
+  p.name AS product_name,
+  t.type_name AS product_type,
+  p.price AS product_price
+FROM products AS p JOIN product_types AS t
+ON p.type_id=t.id
+
+// обновление материализованного представления
+REFRESH MATERIALIZED VIEW products_v
+
+// удаление представлений
+DROP VIEW products_v
+
+DROP MATERIALIZED VIEW products_v
